@@ -1,0 +1,124 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import LabelEncoder
+
+# 1. Load the dataset (Use your absolute path if necessary)
+df = pd.read_csv('tree/yeast.csv') 
+X = df.drop(['name'], axis=1)
+y = df['name']
+
+# 2. Encode the target labels
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+
+# 3. Setup robust 5-fold cross-validation
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+# 4. Iterate through different depths
+depths = range(1, 21)
+accuracy_scores = []
+f1_macro_scores = []
+
+print("Testing different depths...")
+for d in depths:
+    # We keep min_samples_split=10 to ensure branches aren't based on tiny samples
+    model = DecisionTreeClassifier(
+        criterion='entropy', 
+        max_depth=d, 
+        min_samples_split=10, 
+        random_state=69
+    )
+    
+    # Calculate average scores across 5 folds
+    acc = cross_val_score(model, X, y_encoded, cv=skf, scoring='accuracy').mean()
+    f1 = cross_val_score(model, X, y_encoded, cv=skf, scoring='f1_macro').mean()
+    
+    accuracy_scores.append(acc)
+    f1_macro_scores.append(f1)
+    print(f"Depth {d}: Accuracy = {acc:.4f}, F1-Macro = {f1:.4f}")
+
+# 5. Find the best depth
+best_depth = depths[np.argmax(accuracy_scores)]
+print(f"\nBest Depth based on Accuracy: {best_depth}")
+
+# 6. Create a Performance Plot
+plt.figure(figsize=(10, 6))
+plt.plot(depths, accuracy_scores, label='Accuracy', marker='o', color='royalblue')
+plt.plot(depths, f1_macro_scores, label='F1-Macro Score', marker='s', color='forestgreen')
+
+plt.title('Decision Tree Performance vs. Max Depth (Yeast Dataset)')
+plt.xlabel('Tree Depth')
+plt.ylabel('Score')
+plt.xticks(depths)
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.6)
+
+# Save the visualization for your report
+plt.savefig('yeast_depth_analysis.png')
+print("Plot saved as 'yeast_depth_analysis.png'")
+
+
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import f1_score, matthews_corrcoef, classification_report
+from sklearn.preprocessing import LabelEncoder
+
+# 1. Load the Dataset
+# Note: Use the correct path for your machine, e.g., 'tree/yeast.csv' or the absolute path
+
+
+
+
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+
+# 3. Model Initialization (WITH TUNING)
+# Added max_depth and min_samples_split to improve performance on Yeast data
+dt_model = DecisionTreeClassifier(
+    criterion='entropy', 
+    max_depth=best_depth,           # Prevents the tree from becoming too complex
+    min_samples_split=10,  # Ensures a split only happens if there's enough data
+    random_state=69
+)
+
+# 4. Robust Evaluation (5-Fold Stratified CV)
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+f1_scores = cross_val_score(dt_model, X, y_encoded, cv=skf, scoring='f1_macro')
+mcc_scores = []
+
+for train_index, test_index in skf.split(X, y_encoded):
+    X_train_cv, X_test_cv = X.iloc[train_index], X.iloc[test_index]
+    y_train_cv, y_test_cv = y_encoded[train_index], y_encoded[test_index]
+    
+    dt_model.fit(X_train_cv, y_train_cv)
+    y_pred_cv = dt_model.predict(X_test_cv)
+    mcc_scores.append(matthews_corrcoef(y_test_cv, y_pred_cv))
+
+print(f"--- Tuned Yeast Dataset Performance ---")
+print(f"Average F1 Score (Macro): {np.mean(f1_scores):.4f}")
+print(f"Average MCC: {np.mean(mcc_scores):.4f}\n")
+
+# 5. Final Detailed Report
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+)
+
+dt_model.fit(X_train, y_train)
+final_pred = dt_model.predict(X_test)
+
+labels_in_test = np.unique(np.concatenate((y_test, final_pred)))
+target_names_in_test = le.inverse_transform(labels_in_test)
+
+print("--- Detailed Classification Report ---")
+print(classification_report(
+    y_test, 
+    final_pred, 
+    labels=labels_in_test, 
+    target_names=target_names_in_test,
+    zero_division=0
+))
+
