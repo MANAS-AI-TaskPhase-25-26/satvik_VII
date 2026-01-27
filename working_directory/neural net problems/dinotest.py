@@ -55,9 +55,9 @@ TEST_PATH  = "/Users/satviksingh/Documents/repos/satvik_VII/working_directory/ne
 
 IMG_SIZE = 28
 NUM_CLASSES = 5
-HIDDEN_UNITS = 128
-LR = 0.2
-EPOCHS = 3000
+HIDDEN_UNITS = 8
+LR = 0.1
+EPOCHS = 10000
 
 # =====================================================
 # DATA LOADING

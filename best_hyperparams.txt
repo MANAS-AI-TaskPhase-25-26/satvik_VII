@@ -1,0 +1,3 @@
+learning_rate=0.05
+epochs=5000
+test_accuracy=0.957
