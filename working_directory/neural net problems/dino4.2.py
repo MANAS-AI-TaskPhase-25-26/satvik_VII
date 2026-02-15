@@ -26,7 +26,7 @@ import os
 # 1. Paths (CHANGE ONLY THIS IF NEEDED)
 # ==============================
 
-BASE_PATH = "/Users/satviksingh/Documents/manas_git/GitHub/satvik_VII/working_directory/neural net problems/A,B,CNNS_with_Tim"
+BASE_PATH = "/Users/satviksingh/Documents/ manas_git/GitHub/satvik_VII/working_directory/neural net problems/A,B,CNNS_with_Tim"
 
 TRAIN_DIR = os.path.join(BASE_PATH, "veggie_heap_training")
 TEST_DIR = os.path.join(BASE_PATH, "veggie_heap_testing")
@@ -101,7 +101,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # 4. Training
 # ==============================
 
-epochs = 15
+epochs = 1
 train_losses = []
 train_accuracies = []
 
