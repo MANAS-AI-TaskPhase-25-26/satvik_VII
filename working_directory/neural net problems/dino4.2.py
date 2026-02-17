@@ -1,3 +1,10 @@
+# ==============================
+# 0. Imports
+# ==============================
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
@@ -7,37 +14,57 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import os
 
 # ==============================
-# 1. Paths (CHANGE ONLY THIS IF NEEDED)
+# 1. Device (Mac M-series safe)
 # ==============================
 
-BASE_PATH = "/Users/satviksingh/Documents/ manas_git/GitHub/satvik_VII/working_directory/neural net problems/A,B,CNNS_with_Tim"
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
 
-TRAIN_DIR = os.path.join(BASE_PATH, "veggie_heap_training")
-TEST_DIR = os.path.join(BASE_PATH, "veggie_heap_testing")
+print("Using device:", device)
 
 # ==============================
-# 2. Transforms
+# 2. Paths (EDIT ONLY THIS IF NEEDED)
 # ==============================
 
-transform = transforms.Compose([
+TRAIN_DIR = '/Users/satviksingh/Documents/ manas_git/GitHub/satvik_VII/working_directory/neural net problems/A,B,CNNS_with_Tim/veggie_heap_training'
+TEST_DIR = '/Users/satviksingh/Documents/ manas_git/GitHub/satvik_VII/working_directory/neural net problems/A,B,CNNS_with_Tim/veggie_heap_testing'
+
+# ==============================
+# 3. Transforms
+# ==============================
+
+train_transform = transforms.Compose([
     transforms.Resize((128, 128)),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
+    transforms.Normalize((0.5, 0.5, 0.5),
+                         (0.5, 0.5, 0.5))
 ])
 
-train_dataset = ImageFolder(TRAIN_DIR, transform=transform)
-test_dataset = ImageFolder(TEST_DIR, transform=transform)
+test_transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5),
+                         (0.5, 0.5, 0.5))
+])
+
+train_dataset = ImageFolder(TRAIN_DIR, transform=train_transform)
+test_dataset = ImageFolder(TEST_DIR, transform=test_transform)
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 num_classes = len(train_dataset.classes)
+
 print("Classes:", train_dataset.classes)
 print("Number of classes:", num_classes)
 
 # ==============================
-# 3. CNN Model (No Pretrained)
+# 4. CNN Model
 # ==============================
 
 class DinoCNN(nn.Module):
@@ -63,7 +90,7 @@ class DinoCNN(nn.Module):
 
         self.fc = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(128 * 16 * 16, 256),
+            nn.Linear(128 * 16 * 16, 256),  # 128x128 → 64 → 32 → 16
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(256, num_classes)
@@ -75,17 +102,16 @@ class DinoCNN(nn.Module):
         return x
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = DinoCNN(num_classes).to(device)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # ==============================
-# 4. Training
+# 5. Training
 # ==============================
 
-epochs = 1
+epochs = 10
 train_losses = []
 train_accuracies = []
 
@@ -105,6 +131,7 @@ for epoch in range(epochs):
         optimizer.step()
 
         running_loss += loss.item()
+
         _, preds = torch.max(outputs, 1)
         correct += (preds == labels).sum().item()
         total += labels.size(0)
@@ -120,7 +147,7 @@ for epoch in range(epochs):
           f"Accuracy: {epoch_acc:.4f}")
 
 # ==============================
-# 5. Plot Training Graphs
+# 6. Plot Training Graphs
 # ==============================
 
 plt.figure()
@@ -138,7 +165,7 @@ plt.ylabel("Accuracy")
 plt.show()
 
 # ==============================
-# 6. Confusion Matrix
+# 7. Confusion Matrix
 # ==============================
 
 model.eval()
@@ -166,22 +193,26 @@ plt.title("Confusion Matrix")
 plt.show()
 
 # ==============================
-# 7. Show Sample Predictions
+# 8. Show Sample Predictions
 # ==============================
 
 def show_predictions():
+    model.eval()
     images, labels = next(iter(test_loader))
     images = images.to(device)
 
     outputs = model(images)
     _, preds = torch.max(outputs, 1)
 
-    fig = plt.figure(figsize=(12,6))
+    fig = plt.figure(figsize=(12, 6))
 
     for i in range(6):
-        ax = fig.add_subplot(2,3,i+1)
-        img = images[i].cpu().permute(1,2,0)
-        img = img * 0.5 + 0.5  # unnormalize
+        ax = fig.add_subplot(2, 3, i+1)
+
+        img = images[i].cpu()
+        img = img * 0.5 + 0.5   # unnormalize
+        img = img.permute(1, 2, 0)
+
         plt.imshow(img)
         ax.set_title(f"Pred: {train_dataset.classes[preds[i]]}")
         plt.axis("off")
