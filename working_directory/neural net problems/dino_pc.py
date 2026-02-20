@@ -30,8 +30,8 @@ torch.backends.cudnn.benchmark = True
 # 2. Paths (CHANGE TO WINDOWS PATHS)
 # ==============================
 
-TRAIN_DIR = r"C:\path\to\veggie_heap_training"
-TEST_DIR  = r"C:\path\to\veggie_heap_testing"
+TRAIN_DIR = r"working_directory\neural net problems\A,B,CNNS_with_Tim\veggie_heap_training"
+TEST_DIR  = r"working_directory\neural net problems\A,B,CNNS_with_Tim\veggie_heap_testing"
 
 # ==============================
 # 3. Transforms
