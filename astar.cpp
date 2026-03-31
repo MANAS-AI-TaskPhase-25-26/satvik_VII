@@ -9,16 +9,14 @@
 // ============================================================================
 // 1. SIMPLE COORDINATE HOLDER
 // ============================================================================
-// point structure for frid coords
+
+// point structure for grid coords
 struct Point {
     int x;
     int y;
-    
     // defining the meaning for == in case of point structure 
     bool operator==(const Point& other) const {
-        return x == other.x && y == other.y;
-    }
-};
+        return x == other.x && y == other.y;  } };
 
 // ============================================================================
 // 2. THE MAIN ROS 2 NODE CLASS
