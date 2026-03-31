@@ -1,6 +1,3 @@
-// ============================================================================
-// INCLUDES: These are the libraries and message types we need to use.
-// ============================================================================
 #include <rclcpp/rclcpp.hpp>                  // Core ROS 2 C++ library
 #include <nav_msgs/msg/occupancy_grid.hpp>    // The message type for the 2D map
 #include <nav_msgs/msg/path.hpp>              // The message type for the final route
@@ -12,15 +9,12 @@
 // ============================================================================
 // 1. SIMPLE COORDINATE HOLDER
 // ============================================================================
-// We create a simple 'Point' structure to hold X and Y grid coordinates.
-// Working with a custom struct is much easier than juggling separate X and Y variables everywhere.
+// point structure for frid coords
 struct Point {
     int x;
     int y;
     
-    // This is an "operator overload". It teaches C++ how to use the "==" symbol 
-    // to compare two Point objects. It returns true ONLY if both X and Y match.
-    // Without this, C++ wouldn't know how to check if Point A and Point B are the same location.
+    // defining the meaning for == in case of point structure 
     bool operator==(const Point& other) const {
         return x == other.x && y == other.y;
     }
@@ -36,10 +30,7 @@ public:
     AStarPlanner() : Node("astar_planner") {
         
         // --- MAP SUBSCRIBER SETUP ---
-        // Maps are usually published once by a map server and then rarely update. 
-        // If our node starts AFTER the map was published, a normal subscriber would miss it.
-        // "Transient Local" QoS (Quality of Service) tells ROS: "Give me the last message sent, 
-        // even if it was sent before I woke up."
+        // set to transient local so that even after the map is published we can recive it and use it 
         rclcpp::QoS map_qos(10);
         map_qos.transient_local();
         
@@ -69,24 +60,25 @@ private:
     void map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
         RCLCPP_INFO(this->get_logger(), "Map received! Computing 2D A* path...");
         
-        // Extract the width and height of the map in "cells" (not meters)
+        // Extract width and height of the map 
         int width = msg->info.width;
         int height = msg->info.height;
         
         // Define where we want to start and end. 
-        // Right now, this is hardcoded to go from the bottom-left to the top-right of the map.
+        // Right now, this is hardcoded to go from the bottom-left to the top-right of the map.(creates problems for map3)
+        // fix by adding paddint to top and bottom of map 3
         Point start = {0, 0};
         Point goal = {width - 1, height - 1};
 
-        // Call our heavy-lifting A* function to do the math. 
+        // Call A* function to do the math. 
         // It returns a list (vector) of Points representing the winning path.
         std::vector<Point> path = calculateAStar(start, goal, msg->data, width, height);
 
-        // If the path list isn't empty, it means we found a way! Let's publish it.
+        // If the path list isn't empty, publish it.
         if (!path.empty()) {
             publish_path(path, msg);
         } else {
-            // If it IS empty, A* gave up. The goal is completely blocked off.
+            // If it is empty, A* gave up. The goal is completely blocked off.
             RCLCPP_WARN(this->get_logger(), "Failed to find a valid path! The goal might be blocked.");
         }
     }
@@ -94,9 +86,8 @@ private:
     // ========================================================================
     // HELPER: HEURISTIC (THE GUESSER)
     // ========================================================================
-    // A* is fast because it guesses which direction is best. 
-    // This calculates the straight-line ("Euclidean") distance between two points.
-    // We use the standard math formula: sqrt( (x1-x2)^2 + (y1-y2)^2 )
+    // calculates the straight-line ("Euclidean") distance between two points.
+    // used formula: sqrt( (x1-x2)^2 + (y1-y2)^2 )
     float heuristic(Point a, Point b) {
         return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
     }
